@@ -1,12 +1,17 @@
 from datetime import datetime, timedelta
 
-from app import create_app
-from app.extensions import db
-from app.models import Event, Technician, User
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from app import create_app  # noqa: E402
+from app.extensions import db  # noqa: E402
+from app.models import Event, Technician, User  # noqa: E402
 
 app = create_app()
 
 with app.app_context():
+    print("Base de données utilisée :", app.config["SQLALCHEMY_DATABASE_URI"])
     db.create_all()
 
     if not User.query.filter_by(role="admin").first():
