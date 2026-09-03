@@ -1,14 +1,17 @@
-# crmvitalya — API Planning
+# crmvitalya — Planning
 
-API REST Flask pour la gestion de planning (techniciens, interventions,
-indisponibilités), conçue comme remplacement interne de PlanningPME.
+Application web Flask de gestion de planning (techniciens, interventions,
+indisponibilités), conçue comme remplacement complet de PlanningPME :
+une interface utilisable directement par le bureau et les techniciens,
+plus une API REST pour d'éventuelles intégrations externes.
 
 ## Stack
 
-- Flask + Flask-SQLAlchemy (ORM)
+- Flask + Flask-SQLAlchemy (ORM) + Jinja2 (interface web)
+- Flask-Login pour l'authentification (comptes admin et technicien)
 - Flask-Migrate (Alembic) pour les migrations de schéma
 - SQLite par défaut, compatible PostgreSQL via `DATABASE_URL`
-- Authentification par clé API (header `X-API-Key`) sur les écritures
+- API REST protégée par clé API (header `X-API-Key`) pour les intégrations externes
 
 ## Démarrage
 
@@ -19,11 +22,23 @@ pip install -r requirements.txt
 
 cp .env.example .env   # puis éditer SECRET_KEY, API_KEY, DATABASE_URL
 
-flask db upgrade        # crée les tables (technicians, events)
-python seed.py           # (optionnel) données de démonstration
+flask db upgrade        # crée les tables (technicians, events, users)
+python seed.py           # crée un compte admin (admin/admin123) + données de démo
 
 python run.py             # démarre sur http://127.0.0.1:5000
 ```
+
+Changez immédiatement le mot de passe admin par défaut en production.
+
+## Interface web
+
+| Rôle | Ce qu'il voit |
+|---|---|
+| **Admin** | `/planning` — planning de tous les techniciens (agenda semaine, filtrable par technicien), création/modification/suppression d'interventions ; `/techniciens` — gestion des techniciens et de leurs identifiants de connexion |
+| **Technicien** | `/mon-planning` — son propre agenda semaine, lecture seule |
+
+Chaque technicien a son propre compte (créé par l'admin depuis `/techniciens`)
+et ne voit jamais le planning des autres.
 
 ## Modèle de données
 

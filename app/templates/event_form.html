@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{% if event %}Modifier{% else %}Nouvelle{% endif %} intervention{% endblock %}
+{% block content %}
+<div class="form-card">
+  <h1>{% if event %}Modifier l'intervention{% else %}Nouvelle intervention{% endif %}</h1>
+  <form method="post">
+    <label>Technicien
+      <select name="technicien_id" required>
+        {% for t in technicians %}
+          <option value="{{ t.id }}" {% if event and event.resource_id == t.id %}selected{% endif %}>{{ t.prenom }} {{ t.nom }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>Titre
+      <input type="text" name="titre" required value="{{ event.titre if event else '' }}">
+    </label>
+
+    <label>Description
+      <textarea name="description" rows="3">{{ event.description if event else '' }}</textarea>
+    </label>
+
+    <div class="form-row">
+      <label>Date
+        <input type="date" name="date" required value="{{ event.start.date().isoformat() if event else prefill_date }}">
+      </label>
+      <label>Début
+        <input type="time" name="heure_debut" required value="{{ event.start.strftime('%H:%M') if event else '08:00' }}">
+      </label>
+      <label>Fin
+        <input type="time" name="heure_fin" required value="{{ event.end.strftime('%H:%M') if event else '10:00' }}">
+      </label>
+    </div>
+
+    <label class="checkbox">
+      <input type="checkbox" name="is_unavailability" {% if event and event.is_unavailability %}checked{% endif %}>
+      Indisponibilité (congé, absence…) plutôt qu'une intervention
+    </label>
+
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="{{ url_for('web.planning', start=back_start) }}">Annuler</a>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

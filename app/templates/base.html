@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Vitalya Planning{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <nav class="navbar">
+    <a class="brand" href="{{ url_for('web.index') }}">Vitalya Planning</a>
+    {% if current_user.is_admin %}
+      <a href="{{ url_for('web.planning') }}">Planning</a>
+      <a href="{{ url_for('web.technicians') }}">Techniciens</a>
+    {% else %}
+      <a href="{{ url_for('web.mon_planning') }}">Mon planning</a>
+    {% endif %}
+    <span class="spacer"></span>
+    <button id="dark-toggle" type="button" title="Basculer le thème">🌙</button>
+    <span class="who">{{ current_user.username }}</span>
+    <a href="{{ url_for('web.logout') }}">Déconnexion</a>
+  </nav>
+  {% endif %}
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

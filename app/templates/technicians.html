@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Techniciens — Vitalya{% endblock %}
+{% block content %}
+<h1>Techniciens</h1>
+
+<table class="tech-table">
+  <thead>
+    <tr>
+      <th>Nom</th><th>Équipe</th><th>Email</th><th>Statut</th><th>Compte</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in technicians %}
+    <tr>
+      <td>{{ t.prenom }} {{ t.nom }}</td>
+      <td>{{ t.equipe or "—" }}</td>
+      <td>{{ t.email or "—" }}</td>
+      <td>
+        <form method="post" action="{{ url_for('web.technician_toggle_actif', technician_id=t.id) }}">
+          <button type="submit" class="badge {% if t.actif %}badge-green{% else %}badge-grey{% endif %}">
+            {{ "Actif" if t.actif else "Inactif" }}
+          </button>
+        </form>
+      </td>
+      <td>
+        {% if t.user %}
+          <span class="badge badge-green">{{ t.user.username }}</span>
+        {% else %}
+          <span class="badge badge-grey">Aucun</span>
+        {% endif %}
+      </td>
+      <td>
+        <details>
+          <summary>Identifiants</summary>
+          <form method="post" action="{{ url_for('web.technician_account', technician_id=t.id) }}" class="inline-form">
+            <input type="text" name="username" placeholder="identifiant" value="{{ t.user.username if t.user else '' }}" required>
+            <input type="password" name="password" placeholder="mot de passe" required>
+            <button type="submit" class="btn btn-small">Définir</button>
+          </form>
+        </details>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Ajouter un technicien</h2>
+<form method="post" action="{{ url_for('web.technician_new') }}" class="form-card">
+  <div class="form-row">
+    <label>Prénom <input type="text" name="prenom" required></label>
+    <label>Nom <input type="text" name="nom" required></label>
+    <label>Équipe <input type="text" name="equipe"></label>
+  </div>
+  <label>Email <input type="email" name="email"></label>
+  <div class="form-actions">
+    <button type="submit" class="btn">Ajouter</button>
+  </div>
+</form>
+{% endblock %}
