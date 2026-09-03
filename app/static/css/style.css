@@ -152,3 +152,47 @@ input, select, textarea {
 
 .inline-form { display: flex; gap: 6px; margin-top: 8px; }
 .inline-form input { width: auto; margin: 0; }
+
+.view-switch { display: flex; gap: 4px; }
+.btn-active { background: var(--accent); color: #fff; }
+
+.grid-wrapper { overflow-x: auto; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); }
+.planning-grid { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.planning-grid th, .planning-grid td { border: 1px solid var(--border); vertical-align: top; }
+.planning-grid th { background: var(--bg); padding: 8px 6px; font-size: 12px; color: var(--text2); font-weight: 600; white-space: nowrap; }
+.planning-grid .tech-col { width: 160px; min-width: 160px; position: sticky; left: 0; background: var(--white); z-index: 1; padding: 8px 10px; font-size: 13px; font-weight: 600; }
+.planning-grid th.tech-col { background: var(--bg); }
+.planning-grid .day-col.today { background: rgba(0, 122, 255, 0.08); }
+
+.view-jour .day-col, .view-jour .day-cell { min-width: 360px; }
+.view-semaine .day-col, .view-semaine .day-cell { min-width: 150px; }
+.view-mois .day-col, .view-mois .day-cell { min-width: 92px; }
+
+.day-cell { padding: 4px; position: relative; min-height: 48px; }
+.day-cell.today { background: rgba(0, 122, 255, 0.04); }
+.day-cell.drag-over { background: rgba(0, 122, 255, 0.15); }
+
+.event-chip {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  cursor: grab;
+}
+.event-chip.event-unavail { background: var(--orange); }
+.event-chip-link { display: block; padding: 4px 6px; color: inherit; text-decoration: none; }
+.event-chip-time { display: block; opacity: 0.85; font-size: 10px; }
+.event-chip-title { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.add-btn {
+  display: block;
+  text-align: center;
+  color: var(--text3);
+  text-decoration: none;
+  font-size: 13px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.add-btn:hover { color: var(--accent); border-color: var(--accent); }

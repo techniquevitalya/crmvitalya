@@ -4,10 +4,13 @@
 <div class="form-card">
   <h1>{% if event %}Modifier l'intervention{% else %}Nouvelle intervention{% endif %}</h1>
   <form method="post">
+    <input type="hidden" name="view" value="{{ back_view }}">
+    <input type="hidden" name="back_start" value="{{ back_start }}">
+
     <label>Technicien
       <select name="technicien_id" required>
         {% for t in technicians %}
-          <option value="{{ t.id }}" {% if event and event.resource_id == t.id %}selected{% endif %}>{{ t.prenom }} {{ t.nom }}</option>
+          <option value="{{ t.id }}" {% if (event and event.resource_id == t.id) or (not event and prefill_technicien == t.id) %}selected{% endif %}>{{ t.prenom }} {{ t.nom }}</option>
         {% endfor %}
       </select>
     </label>
@@ -32,13 +35,28 @@
       </label>
     </div>
 
+    <label>Couleur
+      <select name="couleur">
+        {% for value, label in couleurs %}
+          <option value="{{ value }}" {% if event and event.couleur == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
     <label class="checkbox">
       <input type="checkbox" name="is_unavailability" {% if event and event.is_unavailability %}checked{% endif %}>
       Indisponibilité (congé, absence…) plutôt qu'une intervention
     </label>
 
     <div class="form-actions">
-      <a class="btn btn-ghost" href="{{ url_for('web.planning', start=back_start) }}">Annuler</a>
+      {% if event %}
+        <form method="post" action="{{ url_for('web.event_delete', event_id=event.id) }}" onsubmit="return confirm('Supprimer cette intervention ?');" class="inline-form">
+          <input type="hidden" name="back_start" value="{{ back_start }}">
+          <input type="hidden" name="back_view" value="{{ back_view }}">
+          <button type="submit" class="btn btn-ghost">Supprimer</button>
+        </form>
+      {% endif %}
+      <a class="btn btn-ghost" href="{{ url_for('web.planning', start=back_start, view=back_view) }}">Annuler</a>
       <button type="submit" class="btn">Enregistrer</button>
     </div>
   </form>

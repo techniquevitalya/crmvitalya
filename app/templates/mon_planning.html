@@ -2,31 +2,18 @@
 {% block title %}Mon planning — Vitalya{% endblock %}
 {% block content %}
 <div class="toolbar">
+  <div class="view-switch">
+    <a class="btn {{ 'btn-active' if view=='jour' else 'btn-ghost' }}" href="{{ url_for('web.mon_planning', view='jour', start=days[0].isoformat()) }}">Jour</a>
+    <a class="btn {{ 'btn-active' if view=='semaine' else 'btn-ghost' }}" href="{{ url_for('web.mon_planning', view='semaine', start=days[0].isoformat()) }}">Semaine</a>
+    <a class="btn {{ 'btn-active' if view=='mois' else 'btn-ghost' }}" href="{{ url_for('web.mon_planning', view='mois', start=days[0].isoformat()) }}">Mois</a>
+  </div>
+
   <div class="week-nav">
-    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', start=prev_start) }}">&larr; Semaine préc.</a>
-    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', start=today_start) }}">Aujourd'hui</a>
-    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', start=next_start) }}">Semaine suiv. &rarr;</a>
+    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', view=view, start=prev_start) }}">&larr;</a>
+    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', view=view, start=today_start) }}">Aujourd'hui</a>
+    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', view=view, start=next_start) }}">&rarr;</a>
   </div>
 </div>
 
-<div class="agenda">
-  {% for day in days %}
-    <section class="agenda-day">
-      <h2>{{ jours[loop.index0] }} {{ day.strftime('%d/%m') }}</h2>
-      {% if agenda[day] %}
-        <ul class="event-list">
-          {% for e in agenda[day] %}
-            <li class="event-item {% if e.is_unavailability %}event-unavail{% endif %}">
-              <span class="event-time">{{ e.start.strftime('%H:%M') }}–{{ e.end.strftime('%H:%M') }}</span>
-              <span class="event-title">{{ e.titre }}</span>
-              {% if e.description %}<span class="event-desc">{{ e.description }}</span>{% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="empty">Rien de prévu.</p>
-      {% endif %}
-    </section>
-  {% endfor %}
-</div>
+{% include "_grid.html" %}
 {% endblock %}

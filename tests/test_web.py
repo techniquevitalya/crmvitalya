@@ -102,6 +102,8 @@ def test_admin_creates_event_and_technician_sees_only_own(client, app):
             "date": "2026-09-07",
             "heure_debut": "09:00",
             "heure_fin": "11:00",
+            "back_start": "2026-09-07",
+            "view": "semaine",
         },
         follow_redirects=True,
     )

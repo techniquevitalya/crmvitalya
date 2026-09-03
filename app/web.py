@@ -1,6 +1,15 @@
 from datetime import date, datetime, timedelta
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.auth import admin_required
@@ -9,39 +18,72 @@ from app.models import Event, Technician, User
 
 bp = Blueprint("web", __name__)
 
-JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+VUES = ("jour", "semaine", "mois")
+
+COULEURS = [
+    ("", "Standard"),
+    ("#007AFF", "Bleu"),
+    ("#34c759", "Vert"),
+    ("#ff9500", "Orange"),
+    ("#af52de", "Violet"),
+    ("#30b0c7", "Turquoise"),
+    ("#ff3b30", "Rouge"),
+]
 
 
 def _monday_of(d):
     return d - timedelta(days=d.weekday())
 
 
-def _week_range(start_param):
-    if start_param:
-        try:
-            start = date.fromisoformat(start_param)
-        except ValueError:
-            start = _monday_of(date.today())
+def _compute_days(view, start_param):
+    try:
+        ref = date.fromisoformat(start_param) if start_param else date.today()
+    except ValueError:
+        ref = date.today()
+
+    if view == "jour":
+        days = [ref]
+        prev_ref = ref - timedelta(days=1)
+        next_ref = ref + timedelta(days=1)
+    elif view == "mois":
+        first = ref.replace(day=1)
+        next_month = (first.replace(day=28) + timedelta(days=4)).replace(day=1)
+        days = [first + timedelta(days=i) for i in range((next_month - first).days)]
+        prev_ref = (first - timedelta(days=1)).replace(day=1)
+        next_ref = next_month
     else:
-        start = _monday_of(date.today())
-    start = _monday_of(start)
-    days = [start + timedelta(days=i) for i in range(7)]
-    return start, days
+        monday = _monday_of(ref)
+        days = [monday + timedelta(days=i) for i in range(7)]
+        prev_ref = monday - timedelta(days=7)
+        next_ref = monday + timedelta(days=7)
+
+    return days, prev_ref, next_ref
 
 
-def _agenda_for(days, technician_id=None):
-    week_start = datetime.combine(days[0], datetime.min.time())
-    week_end = datetime.combine(days[-1] + timedelta(days=1), datetime.min.time())
+def _agenda_grid(days, technicians):
+    day_start = datetime.combine(days[0], datetime.min.time())
+    day_end = datetime.combine(days[-1] + timedelta(days=1), datetime.min.time())
+    tech_ids = [t.id for t in technicians]
 
-    query = Event.query.filter(Event.start >= week_start, Event.start < week_end)
-    if technician_id is not None:
-        query = query.filter_by(resource_id=technician_id)
-    events = query.order_by(Event.start).all()
+    events = []
+    if tech_ids:
+        events = (
+            Event.query.filter(
+                Event.start >= day_start,
+                Event.start < day_end,
+                Event.resource_id.in_(tech_ids),
+            )
+            .order_by(Event.start)
+            .all()
+        )
 
-    agenda = {d: [] for d in days}
-    for event in events:
-        agenda[event.start.date()].append(event)
-    return agenda
+    grid = {t.id: {d: [] for d in days} for t in technicians}
+    for e in events:
+        d = e.start.date()
+        if e.resource_id in grid and d in grid[e.resource_id]:
+            grid[e.resource_id][d].append(e)
+    return grid
 
 
 @bp.get("/")
@@ -80,20 +122,32 @@ def logout():
 @login_required
 @admin_required
 def planning():
-    start, days = _week_range(request.args.get("start"))
+    view = request.args.get("view", "semaine")
+    if view not in VUES:
+        view = "semaine"
+    days, prev_ref, next_ref = _compute_days(view, request.args.get("start"))
+
     technician_id = request.args.get("technicien", type=int)
-    agenda = _agenda_for(days, technician_id)
+    technicians = Technician.query.filter_by(actif=True).order_by(Technician.nom).all()
+    if technician_id:
+        technicians = [t for t in technicians if t.id == technician_id]
+
+    grid = _agenda_grid(days, technicians)
 
     return render_template(
         "planning.html",
+        editable=True,
+        view=view,
         days=days,
         jours=JOURS,
-        agenda=agenda,
-        technicians=Technician.query.order_by(Technician.nom).all(),
+        grid=grid,
+        technicians=technicians,
+        all_technicians=Technician.query.order_by(Technician.nom).all(),
         selected_technician=technician_id,
-        prev_start=(start - timedelta(days=7)).isoformat(),
-        next_start=(start + timedelta(days=7)).isoformat(),
-        today_start=_monday_of(date.today()).isoformat(),
+        prev_start=prev_ref.isoformat(),
+        next_start=next_ref.isoformat(),
+        today_start=date.today().isoformat(),
+        today=date.today(),
     )
 
 
@@ -103,17 +157,26 @@ def mon_planning():
     if current_user.is_admin or not current_user.technician_id:
         abort(404)
 
-    start, days = _week_range(request.args.get("start"))
-    agenda = _agenda_for(days, current_user.technician_id)
+    view = request.args.get("view", "semaine")
+    if view not in VUES:
+        view = "semaine"
+    days, prev_ref, next_ref = _compute_days(view, request.args.get("start"))
+
+    technicians = [current_user.technician]
+    grid = _agenda_grid(days, technicians)
 
     return render_template(
         "mon_planning.html",
+        editable=False,
+        view=view,
         days=days,
         jours=JOURS,
-        agenda=agenda,
-        prev_start=(start - timedelta(days=7)).isoformat(),
-        next_start=(start + timedelta(days=7)).isoformat(),
-        today_start=_monday_of(date.today()).isoformat(),
+        grid=grid,
+        technicians=technicians,
+        prev_start=prev_ref.isoformat(),
+        next_start=next_ref.isoformat(),
+        today_start=date.today().isoformat(),
+        today=date.today(),
     )
 
 
@@ -147,6 +210,7 @@ def _parse_event_form(form):
         "start": start,
         "end": end,
         "is_unavailability": form.get("is_unavailability") == "on",
+        "couleur": form.get("couleur") or None,
     }, errors
 
 
@@ -155,10 +219,14 @@ def _parse_event_form(form):
 @admin_required
 def event_new():
     prefill_date = request.args.get("date", date.today().isoformat())
-    prefill_start = request.args.get("start", date.today().isoformat())
+    prefill_technicien = request.args.get("technicien_id", type=int)
+    back_start = request.args.get("start", date.today().isoformat())
+    back_view = request.args.get("view", "semaine")
 
     if request.method == "POST":
         data, errors = _parse_event_form(request.form)
+        back_view = request.form.get("view", back_view)
+        back_start = request.form.get("back_start", back_start)
         if errors:
             for error in errors:
                 flash(error, "error")
@@ -170,20 +238,24 @@ def event_new():
                 start=data["start"],
                 end=data["end"],
                 is_unavailability=data["is_unavailability"],
+                couleur=data["couleur"],
             )
             db.session.add(event)
             db.session.commit()
             flash("Intervention créée.", "success")
             return redirect(
-                url_for("web.planning", start=_monday_of(data["start"].date()).isoformat())
+                url_for("web.planning", start=back_start, view=back_view)
             )
 
     return render_template(
         "event_form.html",
         event=None,
         technicians=Technician.query.filter_by(actif=True).order_by(Technician.nom).all(),
+        couleurs=COULEURS,
         prefill_date=prefill_date,
-        back_start=prefill_start,
+        prefill_technicien=prefill_technicien,
+        back_start=back_start,
+        back_view=back_view,
     )
 
 
@@ -192,9 +264,13 @@ def event_new():
 @admin_required
 def event_edit(event_id):
     event = Event.query.get_or_404(event_id)
+    back_start = request.args.get("start", _monday_of(event.start.date()).isoformat())
+    back_view = request.args.get("view", "semaine")
 
     if request.method == "POST":
         data, errors = _parse_event_form(request.form)
+        back_view = request.form.get("view", back_view)
+        back_start = request.form.get("back_start", back_start)
         if errors:
             for error in errors:
                 flash(error, "error")
@@ -205,18 +281,20 @@ def event_edit(event_id):
             event.start = data["start"]
             event.end = data["end"]
             event.is_unavailability = data["is_unavailability"]
+            event.couleur = data["couleur"]
             db.session.commit()
             flash("Intervention modifiée.", "success")
-            return redirect(
-                url_for("web.planning", start=_monday_of(data["start"].date()).isoformat())
-            )
+            return redirect(url_for("web.planning", start=back_start, view=back_view))
 
     return render_template(
         "event_form.html",
         event=event,
         technicians=Technician.query.filter_by(actif=True).order_by(Technician.nom).all(),
+        couleurs=COULEURS,
         prefill_date=event.start.date().isoformat(),
-        back_start=_monday_of(event.start.date()).isoformat(),
+        prefill_technicien=event.resource_id,
+        back_start=back_start,
+        back_view=back_view,
     )
 
 
@@ -225,11 +303,40 @@ def event_edit(event_id):
 @admin_required
 def event_delete(event_id):
     event = Event.query.get_or_404(event_id)
-    week_start = _monday_of(event.start.date()).isoformat()
+    back_start = request.form.get("back_start", _monday_of(event.start.date()).isoformat())
+    back_view = request.form.get("back_view", "semaine")
     db.session.delete(event)
     db.session.commit()
     flash("Intervention supprimée.", "success")
-    return redirect(url_for("web.planning", start=week_start))
+    return redirect(url_for("web.planning", start=back_start, view=back_view))
+
+
+@bp.post("/planning/event/<int:event_id>/move")
+@login_required
+@admin_required
+def event_move(event_id):
+    event = Event.query.get_or_404(event_id)
+    payload = request.get_json(silent=True) or {}
+
+    new_date_str = payload.get("date")
+    new_technician_id = payload.get("technicienId")
+
+    if new_technician_id is not None:
+        if not db.session.get(Technician, new_technician_id):
+            return jsonify({"error": "technicien inconnu"}), 400
+        event.resource_id = new_technician_id
+
+    if new_date_str:
+        try:
+            new_date = date.fromisoformat(new_date_str)
+        except ValueError:
+            return jsonify({"error": "date invalide"}), 400
+        day_shift = new_date - event.start.date()
+        event.start += day_shift
+        event.end += day_shift
+
+    db.session.commit()
+    return jsonify(event.to_dict())
 
 
 @bp.get("/techniciens")
