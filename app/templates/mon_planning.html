@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Mon planning — Vitalya{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div class="view-switch">
+    <a class="btn {{ 'btn-active' if view=='jour' else 'btn-ghost' }}" href="{{ url_for('web.mon_planning', view='jour', start=days[0].isoformat()) }}">Jour</a>
+    <a class="btn {{ 'btn-active' if view=='semaine' else 'btn-ghost' }}" href="{{ url_for('web.mon_planning', view='semaine', start=days[0].isoformat()) }}">Semaine</a>
+    <a class="btn {{ 'btn-active' if view=='mois' else 'btn-ghost' }}" href="{{ url_for('web.mon_planning', view='mois', start=days[0].isoformat()) }}">Mois</a>
+  </div>
+
+  <div class="week-nav">
+    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', view=view, start=prev_start) }}">&larr;</a>
+    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', view=view, start=today_start) }}">Aujourd'hui</a>
+    <a class="btn btn-ghost" href="{{ url_for('web.mon_planning', view=view, start=next_start) }}">&rarr;</a>
+  </div>
+</div>
+
+{% include "_grid.html" %}
+{% endblock %}

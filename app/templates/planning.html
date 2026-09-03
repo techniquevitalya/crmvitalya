@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Planning — Vitalya{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div class="view-switch">
+    <a class="btn {{ 'btn-active' if view=='jour' else 'btn-ghost' }}" href="{{ url_for('web.planning', view='jour', start=days[0].isoformat(), technicien=selected_technician) }}">Jour</a>
+    <a class="btn {{ 'btn-active' if view=='semaine' else 'btn-ghost' }}" href="{{ url_for('web.planning', view='semaine', start=days[0].isoformat(), technicien=selected_technician) }}">Semaine</a>
+    <a class="btn {{ 'btn-active' if view=='mois' else 'btn-ghost' }}" href="{{ url_for('web.planning', view='mois', start=days[0].isoformat(), technicien=selected_technician) }}">Mois</a>
+  </div>
+
+  <div class="week-nav">
+    <a class="btn btn-ghost" href="{{ url_for('web.planning', view=view, start=prev_start, technicien=selected_technician) }}">&larr;</a>
+    <a class="btn btn-ghost" href="{{ url_for('web.planning', view=view, start=today_start, technicien=selected_technician) }}">Aujourd'hui</a>
+    <a class="btn btn-ghost" href="{{ url_for('web.planning', view=view, start=next_start, technicien=selected_technician) }}">&rarr;</a>
+  </div>
+
+  <form method="get" class="filter-form">
+    <input type="hidden" name="view" value="{{ view }}">
+    <input type="hidden" name="start" value="{{ days[0].isoformat() }}">
+    <select name="technicien" onchange="this.form.submit()">
+      <option value="">Tous les techniciens</option>
+      {% for t in all_technicians %}
+        <option value="{{ t.id }}" {% if selected_technician == t.id %}selected{% endif %}>{{ t.prenom }} {{ t.nom }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <a class="btn" href="{{ url_for('web.event_new', date=days[0].isoformat(), start=days[0].isoformat(), view=view) }}">+ Nouvelle intervention</a>
+</div>
+
+{% include "_grid.html" %}
+{% endblock %}

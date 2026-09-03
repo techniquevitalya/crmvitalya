@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Connexion — Vitalya Planning{% endblock %}
+{% block content %}
+<div class="login-card">
+  <h1>Vitalya Planning</h1>
+  <form method="post">
+    <label>Identifiant
+      <input type="text" name="username" required autofocus>
+    </label>
+    <label>Mot de passe
+      <input type="password" name="password" required>
+    </label>
+    <button type="submit" class="btn">Se connecter</button>
+  </form>
+</div>
+{% endblock %}

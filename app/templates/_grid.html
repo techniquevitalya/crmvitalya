@@ -1,0 +1,48 @@
+<div class="grid-wrapper">
+  <table class="planning-grid view-{{ view }}">
+    <thead>
+      <tr>
+        <th class="tech-col">Technicien</th>
+        {% for day in days %}
+          <th class="day-col {% if day == today %}today{% endif %}">
+            {{ jours[day.weekday()] }} {{ day.strftime('%d/%m') }}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for tech in technicians %}
+      <tr>
+        <td class="tech-col">{{ tech.prenom }} {{ tech.nom }}</td>
+        {% for day in days %}
+          <td class="day-cell {% if day == today %}today{% endif %}"
+              data-technicien-id="{{ tech.id }}" data-date="{{ day.isoformat() }}">
+            {% for e in grid[tech.id][day] %}
+              <div class="event-chip {% if e.is_unavailability %}event-unavail{% endif %}"
+                   {% if e.couleur %}style="background:{{ e.couleur }};"{% endif %}
+                   {% if editable %}draggable="true" data-event-id="{{ e.id }}"{% endif %}>
+                {% if editable %}
+                <a class="event-chip-link" href="{{ url_for('web.event_edit', event_id=e.id, start=days[0].isoformat(), view=view) }}">
+                {% else %}
+                <span class="event-chip-link">
+                {% endif %}
+                  <span class="event-chip-time">{{ e.start.strftime('%H:%M') }}</span>
+                  <span class="event-chip-title">{{ e.titre }}</span>
+                {% if editable %}</a>{% else %}</span>{% endif %}
+              </div>
+            {% endfor %}
+            {% if editable %}
+              <a class="add-btn" title="Ajouter une intervention"
+                 href="{{ url_for('web.event_new', date=day.isoformat(), technicien_id=tech.id, start=days[0].isoformat(), view=view) }}">+</a>
+            {% endif %}
+          </td>
+        {% endfor %}
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="{{ days|length + 1 }}" class="empty">Aucun technicien actif.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
